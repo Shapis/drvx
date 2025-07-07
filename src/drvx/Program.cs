@@ -175,7 +175,7 @@ if (!Directory.Exists(partition))
 }
 
 // Optional: --filter
-string filter =
+string? filter =
     argsDict.TryGetValue("--filter", out var ext) && !string.IsNullOrEmpty(ext)
         ? ext.StartsWith('.')
             ? ext
@@ -183,7 +183,7 @@ string filter =
         : null;
 
 // Optional: --output
-string outputFile = argsDict.TryGetValue("--output", out var outputPath) ? outputPath : null;
+string? outputFile = argsDict.TryGetValue("--output", out var outputPath) ? outputPath : null;
 
 // Optional: --maxdepth
 int maxDepth = 20;
