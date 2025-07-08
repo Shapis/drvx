@@ -19,7 +19,7 @@
 ## 🧪 Usage
 
 ```bash
-drxv [OPTIONS]
+drvx [OPTIONS]
 ```
 
 | Option                 | Description                                                      |
@@ -38,19 +38,19 @@ drxv [OPTIONS]
 
 ```bash
 # List disks and partitions
-drxv --list
+drvx --list
 
 # Scan all files on a mounted partition
-drxv --partition /dev/sda1
+drvx --partition /dev/sda1
 
 # Scan all mounted partitions on a disk for .txt files
-drxv --disk /dev/sda --filter .txt
+drvx --disk /dev/sda --filter .txt
 
 # Output the result to a text file
-drxv --partition /dev/sda1 --output files.txt
+drvx --partition /dev/sda1 --output files.txt
 
 # Limit directory scan depth to 5
-drxv --disk /dev/sdb --maxdepth 5
+drvx --disk /dev/sdb --maxdepth 5
 ```
 
 ---
@@ -76,7 +76,7 @@ drxv --disk /dev/sdb --maxdepth 5
 4. The binary will be in:
 
     ```
-    bin/Release/net9.0/linux-x64/publish/drxv
+    bin/Release/net9.0/linux-x64/publish/drvx
     ```
 
 ---
