@@ -59,13 +59,13 @@ drxv --disk /dev/sdb --maxdepth 5
 
 - 🐧 Linux system
 - `lsblk` available in `PATH`
-- .NET SDK 6.0+ (only required to build from source)
+- .NET SDK 9.0+ (only required to build from source)
 
 ---
 
 ## 🏗 Building from Source
 
-1. Install .NET 6 SDK.
+1. Install .NET 9 SDK.
 2. Clone this repository.
 3. Run:
 
