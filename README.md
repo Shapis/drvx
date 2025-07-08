@@ -76,7 +76,7 @@ drxv --disk /dev/sdb --maxdepth 5
 4. The binary will be in:
 
     ```
-    bin/Release/net6.0/linux-x64/publish/drxv
+    bin/Release/net9.0/linux-x64/publish/drxv
     ```
 
 ---
