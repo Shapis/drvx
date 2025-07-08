@@ -21,7 +21,7 @@ fi
 LIVE_DIR=~/debian-live                         # Working directory
 DESKTOP_ENV="task-xfce-desktop"               # Desktop environment (change if desired)
 PREINSTALLED_APPS="git curl"                  # Extra packages to include in live ISO
-FILE_URL="https://github.com/Shapis/drvx/releases/download/Binary/drvx"  # Binary URL
+FILE_URL="https://github.com/Shapis/drvx/releases/download/Binary2/drvx"  # Binary URL
 SAVE_PATH="/usr/local/bin/drvx"               # Destination inside live system
 ISO_NAME="debian-live-custom.iso"             # Output ISO name
 
