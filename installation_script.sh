@@ -95,7 +95,7 @@ fi
 # Step 8.5: Cleanup everything except the ISO
 #-------------------------------
 echo "[*] Cleaning up temporary build files..."
-find "$LIVE_DIR" -mindepth 1 ! -name "$ISO_NAME" -exec rm -rf {} +
+find "$LIVE_DIR" -mindepth 1 ! -name "$ISO_NAME" -exec sudo rm -rf {} +
 
 #-------------------------------
 # Step 9: Done & Open Folder
