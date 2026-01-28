@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:io' show Platform, Directory, HttpClient, File;
+import 'dart:io' show Platform, Directory;
 import 'package:flutter/material.dart';
+import 'package:drvx/services/threat_service.dart';
 import 'package:drvx/screens/home_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -53,127 +54,37 @@ class _LoadingScreenState extends State<LoadingScreen> {
             await threatDir.create(recursive: true);
           }
 
-          // Probe to find total files by checking sequential indexes in parallel batches
+          // Delegate probing and downloads to ThreatService
           setState(() => status = 'Scanning available files...');
-          final probeClient = HttpClient();
-          probeClient.connectionTimeout = const Duration(seconds: 10);
-          int probeIndex = 0;
-          const int batchSize = 16;
-          final Uri baseUri = Uri.parse('https://virusshare.com/hashfiles/');
-
-          bool stop = false;
-          while (!stop) {
-            final int start = probeIndex;
-            final int end = start + batchSize;
-            // Launch HEAD requests in parallel for batch
-            final List<Future<int>> futures = [];
-            for (int i = start; i < end; i++) {
-              final fileName = 'VirusShare_${i.toString().padLeft(5, '0')}.md5';
-              final uri = baseUri.replace(path: '${baseUri.path}$fileName');
-              futures.add(
-                Future<int>(() async {
-                  try {
-                    final req = await probeClient
-                        .openUrl('HEAD', uri)
-                        .timeout(const Duration(seconds: 8));
-                    final resp = await req.close().timeout(
-                      const Duration(seconds: 8),
-                    );
-                    return resp.statusCode;
-                  } catch (_) {
-                    return -1;
-                  }
-                }),
+          try {
+            final total = await ThreatService.probeTotalFiles();
+            totalFiles = total;
+            if (totalFiles == 0) {
+              setState(() {
+                busy = false;
+                status = 'No files found.';
+              });
+            } else {
+              await ThreatService.downloadMissingFiles(
+                totalFiles: totalFiles,
+                threatDir: threatDir,
+                onProgress: (c, t, s) {
+                  completed = c;
+                  if (mounted) setState(() => status = s);
+                },
               );
-            }
 
-            final results = await Future.wait(futures);
-            // Walk results in order to find first non-200
-            for (int i = 0; i < results.length; i++) {
-              final code = results[i];
-              if (code == 200) {
-                probeIndex++;
-                continue;
-              }
-              stop = true;
-              break;
+              setState(() {
+                busy = false;
+                status = 'Completed';
+              });
             }
-            // if none in batch failed, loop will continue
-          }
-          probeClient.close(force: true);
-
-          totalFiles = probeIndex;
-          if (totalFiles == 0) {
+          } catch (e) {
+            // ignore: avoid_print
+            print('Failed to initialize directories or downloads: $e');
             setState(() {
               busy = false;
-              status = 'No files found.';
-            });
-          } else {
-            // Parallelize downloads with limited concurrency
-            final downloadClient = HttpClient();
-            downloadClient.connectionTimeout = const Duration(seconds: 15);
-            final List<int> indices = List<int>.generate(totalFiles, (i) => i);
-            const int concurrency = 6;
-            final List<Future<void>> workers = [];
-            for (int w = 0; w < concurrency; w++) {
-              workers.add(
-                Future<void>(() async {
-                  while (true) {
-                    int index;
-                    // synchronous pop from the list
-                    if (indices.isEmpty) break;
-                    index = indices.removeLast();
-
-                    final fileName =
-                        'VirusShare_${index.toString().padLeft(5, '0')}.md5';
-                    final outFile = File('${threatDir.path}/$fileName');
-                    if (await outFile.exists()) {
-                      completed++;
-                      if (mounted)
-                        setState(() => status = 'Skipping $fileName (exists)');
-                      continue;
-                    }
-
-                    if (mounted)
-                      setState(() => status = 'Downloading $fileName');
-                    try {
-                      final uri = Uri.parse(
-                        'https://virusshare.com/hashfiles/$fileName',
-                      );
-                      final req = await downloadClient
-                          .getUrl(uri)
-                          .timeout(const Duration(seconds: 15));
-                      final resp = await req.close().timeout(
-                        const Duration(seconds: 30),
-                      );
-                      if (resp.statusCode == 200) {
-                        final sink = outFile.openWrite();
-                        await resp.pipe(sink);
-                        await sink.flush();
-                        await sink.close();
-                      } else {
-                        // ignore: avoid_print
-                        print(
-                          'Failed to download $fileName: HTTP ${resp.statusCode}',
-                        );
-                      }
-                    } catch (e) {
-                      // ignore: avoid_print
-                      print('Error downloading $fileName: $e');
-                    }
-
-                    completed++;
-                    if (mounted) setState(() {});
-                  }
-                }),
-              );
-            }
-
-            await Future.wait(workers);
-            downloadClient.close(force: true);
-            setState(() {
-              busy = false;
-              status = 'Completed';
+              status = 'Error initializing storage';
             });
           }
         }
