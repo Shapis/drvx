@@ -392,259 +392,553 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 120,
             child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildScanResultsView(ScanResult result) {
-    return Column(
-      children: [
-        // Upper part: Disk/partition info
-        Flexible(
-          flex: 1,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Device info card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    _selected!.isPartition ? Icons.dashboard : Icons.storage,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _selected!.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          _selected!.isPartition
-                              ? 'Partition (${_selected!.size})'
-                              : 'Disk',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (!_selected!.isPartition) ...[
-                _buildInfoRow('Model', _selected!.model),
-                _buildInfoRow('Transport', _selected!.tran),
-              ] else ...[
-                _buildInfoRow('Parent Disk', _selected!.parentDisk ?? '—'),
-              ],
-              _buildInfoRow('Size', _selected!.size),
-              _buildInfoRow(
-                'Mount Point',
-                _selected!.mountpoint.isNotEmpty
-                    ? _selected!.mountpoint
-                    : 'Not mounted',
-              ),
-            ],
-          ),
-        ),
-        const Divider(),
-        // Lower part: Scan results
-        Flexible(
-          flex: 1,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    result.threats.isEmpty ? Icons.check_circle : Icons.warning,
-                    size: 24,
-                    color: result.threats.isEmpty ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Scan Results',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _buildInfoRow('Files', result.scannedFiles.toString()),
-              const SizedBox(height: 8),
-              _buildInfoRow('Threats', result.threats.length.toString()),
-              if (result.threats.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: result.threats.length,
-                    itemBuilder: (context, index) {
-                      final threat = result.threats[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 6.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Text(
-                            threat.path,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.check_circle,
-                        size: 32,
-                        color: Colors.green,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _selected!.isPartition
+                              ? Icons.source_rounded
+                              : Icons.storage_rounded,
+                          size: 28,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No threats detected',
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selected!.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _selected!.isPartition
+                                  ? 'Partition (${_selected!.size})'
+                                  : 'Disk',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (!_selected!.isPartition) ...[
+                    _buildInfoRow('Model', _selected!.model),
+                    _buildInfoRow('Transport', _selected!.tran),
+                  ] else ...[
+                    _buildInfoRow('Parent Disk', _selected!.parentDisk ?? '—'),
+                  ],
+                  _buildInfoRow('Size', _selected!.size),
+                  _buildInfoRow(
+                    'Mount Point',
+                    _selected!.mountpoint.isNotEmpty
+                        ? _selected!.mountpoint
+                        : 'Not mounted',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Scan results card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: result.threats.isEmpty
+                              ? Colors.green.withOpacity(0.15)
+                              : Colors.red.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          result.threats.isEmpty
+                              ? Icons.check_circle_rounded
+                              : Icons.warning_rounded,
+                          size: 24,
+                          color: result.threats.isEmpty
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Scan Results',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.green.shade600,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                ),
-                const Spacer(),
-              ],
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Remove cached results and start a new scan
-                  setState(() {
-                    _scanResults.remove(_selected!.name);
-                  });
-                  _onScan();
-                },
-                icon: const Icon(Icons.search),
-                label: const Text('Scan Again'),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                result.scannedFiles.toString(),
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Files Scanned',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: result.threats.isEmpty
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: result.threats.isEmpty
+                                  ? Colors.green.withOpacity(0.3)
+                                  : Colors.red.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                result.threats.length.toString(),
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: result.threats.isEmpty
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Threats Found',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (result.threats.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      'Detected Threats',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...result.threats.map(
+                      (threat) => Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.dangerous_rounded,
+                              color: Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                threat.path,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.shield_rounded,
+                            size: 48,
+                            color: Colors.green.withOpacity(0.7),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No threats detected',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.green.shade600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Your system is secure',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _scanResults.remove(_selected!.name);
+                        });
+                        _onScan();
+                      },
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Scan Again'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Row(
         children: [
           // Left pane: disk list
           Flexible(
             flex: 1,
             child: Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                    Theme.of(context).colorScheme.surface,
+                  ],
+                ),
+              ),
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  Container(
+                    padding: const EdgeInsets.all(24.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.3),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Connected Disks',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.storage,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Devices',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
                         IconButton(
-                          icon: const Icon(Icons.refresh),
+                          icon: Icon(
+                            Icons.refresh,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            size: 20,
+                          ),
                           onPressed: _refreshDisks,
+                          tooltip: 'Refresh',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
                   ),
                   Expanded(
                     child: _loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ListView.separated(
+                        ? Center(
+                            child: CircularProgressIndicator(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
                             itemCount: _disks.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final d = _disks[index];
                               final selected = d == _selected;
 
-                              // Visual distinction for partitions
-                              return ListTile(
-                                selected: selected,
-                                dense: d.isPartition,
-                                contentPadding: EdgeInsets.only(
-                                  left: d.isPartition ? 32.0 : 16.0,
-                                  right: 16.0,
-                                  top: 4.0,
-                                  bottom: 4.0,
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  left: d.isPartition ? 24.0 : 0,
+                                  bottom: 8.0,
                                 ),
-                                leading: d.isPartition
-                                    ? const Icon(
-                                        Icons.subdirectory_arrow_right,
-                                        size: 16,
-                                      )
-                                    : const Icon(Icons.storage),
-                                title: Text(
-                                  d.name,
-                                  style: TextStyle(
-                                    fontWeight: d.isPartition
-                                        ? FontWeight.normal
-                                        : FontWeight.bold,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () => _onDiskSelected(d),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: selected
+                                            ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withOpacity(0.15)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: selected
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
+                                              : Colors.transparent,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: selected
+                                                  ? Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary
+                                                  : Theme.of(context)
+                                                        .colorScheme
+                                                        .surfaceContainerHighest,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              d.isPartition
+                                                  ? Icons.source_rounded
+                                                  : Icons.storage_rounded,
+                                              size: d.isPartition ? 18 : 24,
+                                              color: selected
+                                                  ? Colors.white
+                                                  : Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  d.name,
+                                                  style: TextStyle(
+                                                    fontWeight: selected
+                                                        ? FontWeight.bold
+                                                        : (d.isPartition
+                                                              ? FontWeight
+                                                                    .normal
+                                                              : FontWeight
+                                                                    .w600),
+                                                    fontSize: d.isPartition
+                                                        ? 14
+                                                        : 15,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  d.isPartition
+                                                      ? d.size
+                                                      : '${d.model} • ${d.size}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                if (d
+                                                    .mountpoint
+                                                    .isNotEmpty) ...[
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    d.mountpoint,
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary
+                                                          .withOpacity(0.7),
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                          if (d.mountpoint.isNotEmpty)
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.withOpacity(
+                                                  0.15,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: const Icon(
+                                                Icons.check_circle_rounded,
+                                                color: Colors.green,
+                                                size: 18,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                subtitle: Text(
-                                  d.isPartition
-                                      ? '${d.size}${d.mountpoint.isNotEmpty ? ' • ${d.mountpoint}' : ''}'
-                                      : '${d.model} • ${d.size}',
-                                ),
-                                trailing: d.mountpoint.isNotEmpty
-                                    ? const Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                      )
-                                    : (d.isPartition
-                                          ? const Icon(
-                                              Icons.circle_outlined,
-                                              size: 16,
-                                            )
-                                          : null),
-                                onTap: () => _onDiskSelected(d),
                               );
                             },
                           ),
@@ -657,241 +951,535 @@ class _HomeScreenState extends State<HomeScreen> {
           // Right pane: details and scan button
           Flexible(
             flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+            child: Container(
+              padding: const EdgeInsets.all(32.0),
               child: _selected == null
-                  ? const Center(child: Text('No disk selected'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.devices_rounded,
+                            size: 64,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No device selected',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : _scanning
-                  ? Column(
-                      children: [
-                        // Upper part: Disk/partition info
-                        Flexible(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                  ? SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Scanning status card
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    _selected!.isPartition
-                                        ? Icons.dashboard
-                                        : Icons.storage,
-                                    size: 32,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _selected!.name,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
                                         ),
-                                        Text(
+                                        child: Icon(
                                           _selected!.isPartition
-                                              ? 'Partition (${_selected!.size})'
-                                              : 'Disk',
-                                          style: TextStyle(
+                                              ? Icons.source_rounded
+                                              : Icons.storage_rounded,
+                                          size: 28,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _selected!.name,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _selected!.isPartition
+                                                  ? 'Partition (${_selected!.size})'
+                                                  : 'Disk',
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  if (!_selected!.isPartition) ...[
+                                    _buildInfoRow('Model', _selected!.model),
+                                    _buildInfoRow('Transport', _selected!.tran),
+                                  ] else ...[
+                                    _buildInfoRow(
+                                      'Parent Disk',
+                                      _selected!.parentDisk ?? '—',
+                                    ),
+                                  ],
+                                  _buildInfoRow('Size', _selected!.size),
+                                  _buildInfoRow(
+                                    'Mount Point',
+                                    _selected!.mountpoint.isNotEmpty
+                                        ? _selected!.mountpoint
+                                        : 'Not mounted',
+                                  ),
+                                  _buildInfoRow('Type', _selected!.type),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Scanning progress card
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 3,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      const Text(
+                                        'Scanning in progress...',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Progress',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                            Text(
+                                              '$_scanProcessed / ${_scanTotal > 0 ? _scanTotal : '?'} files',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: LinearProgressIndicator(
+                                            value: _scanTotal > 0
+                                                ? (_scanProcessed / _scanTotal)
+                                                : null,
+                                            minHeight: 8,
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.surface,
                                             color: Theme.of(
                                               context,
-                                            ).colorScheme.onSurfaceVariant,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              if (!_selected!.isPartition) ...[
-                                _buildInfoRow('Model', _selected!.model),
-                                _buildInfoRow('Transport', _selected!.tran),
-                              ] else ...[
-                                _buildInfoRow(
-                                  'Parent Disk',
-                                  _selected!.parentDisk ?? '—',
-                                ),
-                              ],
-                              _buildInfoRow('Size', _selected!.size),
-                              _buildInfoRow(
-                                'Mount Point',
-                                _selected!.mountpoint.isNotEmpty
-                                    ? _selected!.mountpoint
-                                    : 'Not mounted',
-                              ),
-                              _buildInfoRow('Type', _selected!.type),
-                            ],
-                          ),
-                        ),
-                        const Divider(),
-                        // Lower part: Scan progress
-                        Flexible(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Scanning: ${_selected!.name}'),
-                              const SizedBox(height: 4),
-                              Text('Status: $_scanStatus'),
-                              const SizedBox(height: 8),
-                              LinearProgressIndicator(
-                                value: _scanTotal > 0
-                                    ? (_scanProcessed / _scanTotal)
-                                    : null,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Files: $_scanProcessed / ${_scanTotal > 0 ? _scanTotal : '?'}',
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _threats.isNotEmpty
-                                    ? '⚠️ Threats: ${_threats.length}'
-                                    : 'Threats: ${_threats.length}',
-                                style: TextStyle(
-                                  color: _threats.isNotEmpty
-                                      ? Colors.red
-                                      : null,
-                                  fontWeight: _threats.isNotEmpty
-                                      ? FontWeight.bold
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Text(_scanCurrent),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  ElevatedButton.icon(
-                                    onPressed: null,
-                                    icon: const Icon(Icons.pause),
-                                    label: const Text('Scanning...'),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: _threats.isEmpty
+                                                ? Colors.green.withOpacity(0.1)
+                                                : Colors.red.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: _threats.isEmpty
+                                                  ? Colors.green.withOpacity(
+                                                      0.3,
+                                                    )
+                                                  : Colors.red.withOpacity(0.3),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                _threats.isEmpty
+                                                    ? Icons.shield_rounded
+                                                    : Icons.warning_rounded,
+                                                color: _threats.isEmpty
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                size: 28,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                _threats.length.toString(),
+                                                style: TextStyle(
+                                                  fontSize: 32,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _threats.isEmpty
+                                                      ? Colors.green
+                                                      : Colors.red,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Threats Found',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  ElevatedButton.icon(
-                                    onPressed: _cancelScan,
-                                    icon: const Icon(Icons.stop),
-                                    label: const Text('Cancel'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red.shade400,
-                                      foregroundColor: Colors.white,
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline_rounded,
+                                          size: 16,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _scanStatus,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_scanCurrent.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      constraints: const BoxConstraints(
+                                        maxHeight: 100,
+                                      ),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surface,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline
+                                              .withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: SingleChildScrollView(
+                                        child: Text(
+                                          _scanCurrent,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontFamily: 'monospace',
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _cancelScan,
+                                      icon: const Icon(Icons.stop_rounded),
+                                      label: const Text('Stop Scan'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red.shade600,
+                                        foregroundColor: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     )
                   : // Check if there are saved scan results for this partition
                     _scanResults.containsKey(_selected!.name)
                   ? _buildScanResultsView(_scanResults[_selected!.name]!)
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              _selected!.isPartition
-                                  ? Icons.dashboard
-                                  : Icons.storage,
-                              size: 32,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    _selected!.name,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          _selected!.isPartition
+                                              ? Icons.source_rounded
+                                              : Icons.storage_rounded,
+                                          size: 28,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _selected!.name,
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _selected!.isPartition
+                                                  ? 'Partition (${_selected!.size})'
+                                                  : 'Disk',
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    _selected!.isPartition
-                                        ? 'Partition (${_selected!.size})'
-                                        : 'Disk',
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                  const SizedBox(height: 20),
+                                  if (!_selected!.isPartition) ...[
+                                    _buildInfoRow('Model', _selected!.model),
+                                    _buildInfoRow('Transport', _selected!.tran),
+                                  ] else ...[
+                                    _buildInfoRow(
+                                      'Parent Disk',
+                                      _selected!.parentDisk ?? '—',
                                     ),
+                                  ],
+                                  _buildInfoRow('Size', _selected!.size),
+                                  _buildInfoRow(
+                                    'Mount Point',
+                                    _selected!.mountpoint.isNotEmpty
+                                        ? _selected!.mountpoint
+                                        : 'Not mounted',
                                   ),
+                                  _buildInfoRow('Type', _selected!.type),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (!_selected!.isPartition) ...[
-                          _buildInfoRow('Model', _selected!.model),
-                          _buildInfoRow('Transport', _selected!.tran),
-                        ] else ...[
-                          _buildInfoRow(
-                            'Parent Disk',
-                            _selected!.parentDisk ?? '—',
                           ),
-                        ],
-                        _buildInfoRow('Size', _selected!.size),
-                        _buildInfoRow(
-                          'Mount Point',
-                          _selected!.mountpoint.isNotEmpty
-                              ? _selected!.mountpoint
-                              : 'Not mounted',
-                        ),
-                        _buildInfoRow('Type', _selected!.type),
-                        const Spacer(),
-                        if (_selected!.isPartition) ...[
-                          // Only partitions can be scanned
-                          Row(
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: _scanning ? null : _onScan,
-                                icon: const Icon(Icons.search),
-                                label: Text(_scanning ? 'Scanning...' : 'Scan'),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: _scanning
-                                    ? _cancelScan
-                                    : _refreshDisks,
-                                icon: Icon(
-                                  _scanning ? Icons.stop : Icons.refresh,
+                          const SizedBox(height: 20),
+                          if (_selected!.isPartition) ...[
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.security_rounded,
+                                      size: 64,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Ready to Scan',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Click the button below to start scanning for threats',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _onScan,
+                                        icon: const Icon(
+                                          Icons.play_arrow_rounded,
+                                        ),
+                                        label: const Text('Start Scan'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                label: Text(_scanning ? 'Cancel' : 'Refresh'),
                               ),
-                            ],
-                          ),
-                        ] else ...[
-                          // Disks cannot be scanned directly
-                          Text(
-                            'Select a partition to scan',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: _refreshDisks,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh'),
-                          ),
+                          ] else ...[
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 64,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
+                                          .withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Cannot Scan Disk',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Please select a partition from the list to perform a scan',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
             ),
           ),

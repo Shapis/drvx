@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show LineSplitter, utf8;
 import 'dart:io'
     show Directory, File, HttpClient, HttpClientRequest, HttpClientResponse;
 
@@ -124,13 +125,16 @@ class ThreatService {
   static Future<Set<String>> loadThreatHashes(
     Directory threatDir, {
     void Function(int completed, int total, int hashCount)? onProgress,
-    int concurrency = 4,
+    int concurrency = 12,
   }) async {
     final Set<String> hashes = {};
 
     if (!await threatDir.exists()) {
       return hashes;
     }
+
+    // Compile regex once for efficiency
+    final hashPattern = RegExp(r'^[0-9a-f]{32}$');
 
     // First pass: collect all .md5 files
     final List<File> mdFiles = [];
@@ -142,47 +146,58 @@ class ThreatService {
 
     final total = mdFiles.length;
     int completed = 0;
+    int nextIndex = 0;
 
-    // Process files in parallel with concurrency limit
-    for (int i = 0; i < mdFiles.length; i += concurrency) {
-      final batch = mdFiles.sublist(
-        i,
-        (i + concurrency < mdFiles.length) ? i + concurrency : mdFiles.length,
-      );
+    // Worker function for concurrent processing
+    Future<void> worker() async {
+      while (true) {
+        if (nextIndex >= mdFiles.length) break;
+        final int index = nextIndex++;
+        final file = mdFiles[index];
 
-      final futures = batch.map((file) async {
-        final Set<String> fileHashes = {};
         try {
-          final lines = await file.readAsLines();
-          for (final line in lines) {
-            final trimmed = line.trim();
-            // Skip comments and empty lines
-            if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+          // Use stream-based reading for better memory efficiency
+          final stream = file.openRead();
+          final lines = stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter());
 
-            // Hash may be the full line or the first part (space-separated)
-            final parts = trimmed.split(RegExp(r'\s+'));
-            if (parts.isNotEmpty) {
-              final hash = parts[0].toLowerCase();
-              // Validate it looks like an MD5 hash (32 hex chars)
-              if (hash.length == 32 && RegExp(r'^[0-9a-f]+$').hasMatch(hash)) {
-                fileHashes.add(hash);
-              }
+          await for (final line in lines) {
+            if (line.isEmpty || line.startsWith('#')) continue;
+
+            // Extract first 32 chars (MD5 hash length)
+            final hash = line.length >= 32
+                ? line.substring(0, 32).toLowerCase()
+                : '';
+
+            // Quick validation: check length and pattern
+            if (hash.length == 32 && hashPattern.hasMatch(hash)) {
+              hashes.add(hash);
             }
           }
         } catch (e) {
           // ignore: avoid_print
           print('Error reading ${file.path}: $e');
         }
-        return fileHashes;
-      });
 
-      final results = await Future.wait(futures);
-      for (final fileHashes in results) {
-        hashes.addAll(fileHashes);
         completed++;
-        onProgress?.call(completed, total, hashes.length);
+        // Batch progress updates every 5 files to reduce overhead
+        if (completed % 5 == 0 || completed == total) {
+          onProgress?.call(completed, total, hashes.length);
+        }
       }
     }
+
+    // Launch concurrent workers
+    final List<Future<void>> workers = [];
+    for (int i = 0; i < concurrency; i++) {
+      workers.add(worker());
+    }
+
+    await Future.wait(workers);
+
+    // Final progress update
+    onProgress?.call(completed, total, hashes.length);
 
     return hashes;
   }
