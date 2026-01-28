@@ -19,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _scanning = false;
   int _scanTotal = 0;
   int _scanProcessed = 0;
-  String _scanCurrent = '';
   String _scanStatus = '';
   List<ThreatMatch> _threats = [];
 
@@ -55,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
       // Reset scanning state when selecting a different disk
       _scanTotal = 0;
       _scanProcessed = 0;
-      _scanCurrent = '';
       _scanStatus = '';
       _threats = [];
     });
@@ -102,7 +100,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _scanning = true;
       _scanTotal = 0;
       _scanProcessed = 0;
-      _scanCurrent = '';
       _scanStatus =
           'Starting scan (${widget.threatHashes.length} threat hashes loaded)...';
       _threats = [];
@@ -119,7 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _scanProcessed = p;
             _scanTotal = t;
-            _scanCurrent = path;
             _scanStatus = status;
             _threats = threats;
           });
@@ -419,85 +415,85 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildScanResultsView(ScanResult result) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Device info card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _selected!.isPartition
-                              ? Icons.source_rounded
-                              : Icons.storage_rounded,
-                          size: 28,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Device info card (fixed height)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selected!.name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selected!.isPartition
-                                  ? 'Partition (${_selected!.size})'
-                                  : 'Disk',
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: Icon(
+                        _selected!.isPartition
+                            ? Icons.source_rounded
+                            : Icons.storage_rounded,
+                        size: 28,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (!_selected!.isPartition) ...[
-                    _buildInfoRow('Model', _selected!.model),
-                    _buildInfoRow('Transport', _selected!.tran),
-                  ] else ...[
-                    _buildInfoRow('Parent Disk', _selected!.parentDisk ?? '—'),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selected!.name,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _selected!.isPartition
+                                ? 'Partition (${_selected!.size})'
+                                : 'Disk',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                  _buildInfoRow('Size', _selected!.size),
-                  _buildInfoRow(
-                    'Mount Point',
-                    _selected!.mountpoint.isNotEmpty
-                        ? _selected!.mountpoint
-                        : 'Not mounted',
-                  ),
+                ),
+                const SizedBox(height: 20),
+                if (!_selected!.isPartition) ...[
+                  _buildInfoRow('Model', _selected!.model),
+                  _buildInfoRow('Transport', _selected!.tran),
+                ] else ...[
+                  _buildInfoRow('Parent Disk', _selected!.parentDisk ?? '—'),
                 ],
-              ),
+                _buildInfoRow('Size', _selected!.size),
+                _buildInfoRow(
+                  'Mount Point',
+                  _selected!.mountpoint.isNotEmpty
+                      ? _selected!.mountpoint
+                      : 'Not mounted',
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          // Scan results card
-          Card(
+        ),
+        const SizedBox(height: 20),
+        // Scan results card with scrollable threats list
+        Expanded(
+          child: Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -557,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Files Scanned',
+                                'Files',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Theme.of(
@@ -599,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Threats Found',
+                                'Threats',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Theme.of(
@@ -613,8 +609,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
                   if (result.threats.isNotEmpty) ...[
-                    const SizedBox(height: 20),
                     Text(
                       'Detected Threats',
                       style: TextStyle(
@@ -624,75 +620,84 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ...result.threats.map(
-                      (threat) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.red.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
+                    // Scrollable threat list
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: result.threats.length,
+                        itemBuilder: (context, index) {
+                          final threat = result.threats[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.dangerous_rounded,
+                                  color: Colors.red,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    threat.path,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.dangerous_rounded,
-                              color: Colors.red,
-                              size: 16,
+                              Icons.shield_rounded,
+                              size: 48,
+                              color: Colors.green.withOpacity(0.7),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                threat.path,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 12),
+                            Text(
+                              'No threats detected',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.green.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Your system is secure',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ] else ...[
-                    const SizedBox(height: 20),
-                    Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.shield_rounded,
-                            size: 48,
-                            color: Colors.green.withOpacity(0.7),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No threats detected',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.green.shade600,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Your system is secure',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
-                  const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -714,8 +719,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -783,7 +788,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Theme.of(context).colorScheme.onSurface,
                             size: 20,
                           ),
-                          onPressed: _refreshDisks,
+                          onPressed: _scanning ? null : _refreshDisks,
                           tooltip: 'Refresh',
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -979,130 +984,124 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     )
                   : _scanning
-                  ? SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Scanning status card
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Scanning status card (compact)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        _selected!.isPartition
+                                            ? Icons.source_rounded
+                                            : Icons.storage_rounded,
+                                        size: 20,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _selected!.name,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        child: Icon(
-                                          _selected!.isPartition
-                                              ? Icons.source_rounded
-                                              : Icons.storage_rounded,
-                                          size: 28,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _selected!.name,
-                                              style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                          Text(
+                                            '${_selected!.type} • ${_selected!.size}',
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                              fontSize: 12,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              _selected!.isPartition
-                                                  ? 'Partition (${_selected!.size})'
-                                                  : 'Disk',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (!_selected!.isPartition) ...[
-                                    _buildInfoRow('Model', _selected!.model),
-                                    _buildInfoRow('Transport', _selected!.tran),
-                                  ] else ...[
-                                    _buildInfoRow(
-                                      'Parent Disk',
-                                      _selected!.parentDisk ?? '—',
                                     ),
                                   ],
-                                  _buildInfoRow('Size', _selected!.size),
+                                ),
+                                const SizedBox(height: 20),
+                                if (!_selected!.isPartition) ...[
+                                  _buildInfoRow('Model', _selected!.model),
+                                  _buildInfoRow('Transport', _selected!.tran),
+                                ] else ...[
                                   _buildInfoRow(
-                                    'Mount Point',
-                                    _selected!.mountpoint.isNotEmpty
-                                        ? _selected!.mountpoint
-                                        : 'Not mounted',
+                                    'Parent Disk',
+                                    _selected!.parentDisk ?? '—',
                                   ),
-                                  _buildInfoRow('Type', _selected!.type),
                                 ],
-                              ),
+                                _buildInfoRow('Size', _selected!.size),
+                                _buildInfoRow(
+                                  'Mount Point',
+                                  _selected!.mountpoint.isNotEmpty
+                                      ? _selected!.mountpoint
+                                      : 'Not mounted',
+                                ),
+                                _buildInfoRow('Type', _selected!.type),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          // Scanning progress card
-                          Card(
+                        ),
+                        const SizedBox(height: 12),
+                        // Scanning progress card
+                        Expanded(
+                          child: Card(
                             child: Padding(
-                              padding: const EdgeInsets.all(24.0),
+                              padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
                                       SizedBox(
-                                        width: 24,
-                                        height: 24,
+                                        width: 20,
+                                        height: 20,
                                         child: CircularProgressIndicator(
-                                          strokeWidth: 3,
+                                          strokeWidth: 2.5,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.primary,
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: 12),
                                       const Text(
-                                        'Scanning in progress...',
+                                        'Scanning...',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 20),
+                                  const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.surfaceContainerHighest,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Column(
                                       children: [
@@ -1111,33 +1110,33 @@ class _HomeScreenState extends State<HomeScreen> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              'Progress',
+                                              '$_scanProcessed / ${_scanTotal > 0 ? _scanTotal : '?'}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${_scanTotal > 0 ? ((_scanProcessed / _scanTotal * 100).toStringAsFixed(0)) : '0'}%',
                                               style: TextStyle(
-                                                fontSize: 13,
+                                                fontSize: 12,
                                                 color: Theme.of(
                                                   context,
                                                 ).colorScheme.onSurfaceVariant,
                                               ),
                                             ),
-                                            Text(
-                                              '$_scanProcessed / ${_scanTotal > 0 ? _scanTotal : '?'} files',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
                                           ],
                                         ),
-                                        const SizedBox(height: 12),
+                                        const SizedBox(height: 8),
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(
-                                            8,
+                                            6,
                                           ),
                                           child: LinearProgressIndicator(
                                             value: _scanTotal > 0
                                                 ? (_scanProcessed / _scanTotal)
                                                 : null,
-                                            minHeight: 8,
+                                            minHeight: 6,
                                             backgroundColor: Theme.of(
                                               context,
                                             ).colorScheme.surface,
@@ -1149,91 +1148,90 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                      horizontal: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _threats.isEmpty
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: _threats.isEmpty
+                                            ? Colors.green.withOpacity(0.3)
+                                            : Colors.red.withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _threats.isEmpty
+                                              ? Icons.shield_rounded
+                                              : Icons.warning_rounded,
+                                          color: _threats.isEmpty
+                                              ? Colors.green
+                                              : Colors.red,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _threats.length.toString(),
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
                                             color: _threats.isEmpty
-                                                ? Colors.green.withOpacity(0.1)
-                                                : Colors.red.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: _threats.isEmpty
-                                                  ? Colors.green.withOpacity(
-                                                      0.3,
-                                                    )
-                                                  : Colors.red.withOpacity(0.3),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            children: [
-                                              Icon(
-                                                _threats.isEmpty
-                                                    ? Icons.shield_rounded
-                                                    : Icons.warning_rounded,
-                                                color: _threats.isEmpty
-                                                    ? Colors.green
-                                                    : Colors.red,
-                                                size: 28,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                _threats.length.toString(),
-                                                style: TextStyle(
-                                                  fontSize: 32,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: _threats.isEmpty
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Threats Found',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ),
-                                            ],
+                                                ? Colors.green
+                                                : Colors.red,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Threats',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 10),
                                   Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                      horizontal: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context)
                                           .colorScheme
                                           .surfaceContainerHighest
                                           .withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Row(
                                       children: [
                                         Icon(
-                                          Icons.info_outline_rounded,
-                                          size: 16,
+                                          Icons.folder_open,
+                                          size: 14,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.onSurfaceVariant,
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             _scanStatus,
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 11,
                                               color: Theme.of(
                                                 context,
                                               ).colorScheme.onSurfaceVariant,
@@ -1245,40 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                     ),
                                   ),
-                                  if (_scanCurrent.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      constraints: const BoxConstraints(
-                                        maxHeight: 100,
-                                      ),
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surface,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline
-                                              .withOpacity(0.2),
-                                        ),
-                                      ),
-                                      child: SingleChildScrollView(
-                                        child: Text(
-                                          _scanCurrent,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontFamily: 'monospace',
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 12),
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton.icon(
@@ -1295,8 +1260,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     )
                   : // Check if there are saved scan results for this partition
                     _scanResults.containsKey(_selected!.name)
