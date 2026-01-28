@@ -113,4 +113,77 @@ class ThreatService {
     await Future.wait(workers);
     downloadClient.close(force: true);
   }
+
+  /// Loads all threat hashes from the given [threatDir].
+  ///
+  /// Returns a [Set<String>] containing all lowercase MD5 hashes from .md5 files
+  /// in the directory. Each file is expected to contain one hash per line,
+  /// with optional comment lines starting with '#'.
+  ///
+  /// Calls [onProgress] with (completed, total, hashCount) as progress updates.
+  static Future<Set<String>> loadThreatHashes(
+    Directory threatDir, {
+    void Function(int completed, int total, int hashCount)? onProgress,
+    int concurrency = 4,
+  }) async {
+    final Set<String> hashes = {};
+
+    if (!await threatDir.exists()) {
+      return hashes;
+    }
+
+    // First pass: collect all .md5 files
+    final List<File> mdFiles = [];
+    await for (final entity in threatDir.list(followLinks: false)) {
+      if (entity is File && entity.path.endsWith('.md5')) {
+        mdFiles.add(entity);
+      }
+    }
+
+    final total = mdFiles.length;
+    int completed = 0;
+
+    // Process files in parallel with concurrency limit
+    for (int i = 0; i < mdFiles.length; i += concurrency) {
+      final batch = mdFiles.sublist(
+        i,
+        (i + concurrency < mdFiles.length) ? i + concurrency : mdFiles.length,
+      );
+
+      final futures = batch.map((file) async {
+        final Set<String> fileHashes = {};
+        try {
+          final lines = await file.readAsLines();
+          for (final line in lines) {
+            final trimmed = line.trim();
+            // Skip comments and empty lines
+            if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+
+            // Hash may be the full line or the first part (space-separated)
+            final parts = trimmed.split(RegExp(r'\s+'));
+            if (parts.isNotEmpty) {
+              final hash = parts[0].toLowerCase();
+              // Validate it looks like an MD5 hash (32 hex chars)
+              if (hash.length == 32 && RegExp(r'^[0-9a-f]+$').hasMatch(hash)) {
+                fileHashes.add(hash);
+              }
+            }
+          }
+        } catch (e) {
+          // ignore: avoid_print
+          print('Error reading ${file.path}: $e');
+        }
+        return fileHashes;
+      });
+
+      final results = await Future.wait(futures);
+      for (final fileHashes in results) {
+        hashes.addAll(fileHashes);
+        completed++;
+        onProgress?.call(completed, total, hashes.length);
+      }
+    }
+
+    return hashes;
+  }
 }
