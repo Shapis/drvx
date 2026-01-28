@@ -114,13 +114,14 @@ class _HomeScreenState extends State<HomeScreen> {
         disk: _selected!,
         threatHashes: widget.threatHashes,
         shouldCancel: () => _shouldCancelScan,
-        onProgress: (p, t, path, status) {
+        onProgress: (p, t, path, status, threats) {
           if (_shouldCancelScan) return;
           setState(() {
             _scanProcessed = p;
             _scanTotal = t;
             _scanCurrent = path;
             _scanStatus = status;
+            _threats = threats;
           });
         },
       );
@@ -492,12 +493,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              _buildInfoRow('Files Scanned', result.scannedFiles.toString()),
+              _buildInfoRow('Files', result.scannedFiles.toString()),
               const SizedBox(height: 8),
-              _buildInfoRow(
-                'Threats Detected',
-                result.threats.length.toString(),
-              ),
+              _buildInfoRow('Threats', result.threats.length.toString()),
               if (result.threats.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Expanded(
@@ -509,27 +507,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         margin: const EdgeInsets.only(bottom: 6.0),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                threat.path,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Hash: ${threat.hash}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontFamily: 'monospace',
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            threat.path,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       );
@@ -741,6 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? _selected!.mountpoint
                                     : 'Not mounted',
                               ),
+                              _buildInfoRow('Type', _selected!.type),
                             ],
                           ),
                         ),
@@ -751,6 +734,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text('Scanning: ${_selected!.name}'),
+                              const SizedBox(height: 4),
                               Text('Status: $_scanStatus'),
                               const SizedBox(height: 8),
                               LinearProgressIndicator(
@@ -762,16 +747,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 'Files: $_scanProcessed / ${_scanTotal > 0 ? _scanTotal : '?'}',
                               ),
-                              if (_threats.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  '⚠️ Threats found: ${_threats.length}',
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _threats.isNotEmpty
+                                    ? '⚠️ Threats: ${_threats.length}'
+                                    : 'Threats: ${_threats.length}',
+                                style: TextStyle(
+                                  color: _threats.isNotEmpty
+                                      ? Colors.red
+                                      : null,
+                                  fontWeight: _threats.isNotEmpty
+                                      ? FontWeight.bold
+                                      : null,
                                 ),
-                              ],
+                              ),
                               const SizedBox(height: 12),
                               Expanded(
                                 child: SingleChildScrollView(

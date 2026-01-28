@@ -73,7 +73,7 @@ class DiskService {
       final result = await Process.run('lsblk', [
         '-J',
         '-o',
-        'NAME,SIZE,MODEL,MOUNTPOINT,TYPE,TRAN',
+        'NAME,SIZE,MODEL,MOUNTPOINT,TYPE,TRAN,FSTYPE',
       ]);
       if (result.exitCode != 0) return [];
       final Map<String, dynamic> json = jsonDecode(result.stdout as String);
@@ -108,7 +108,10 @@ class DiskService {
         final children = dev['children'] as List<dynamic>? ?? [];
         for (final child in children) {
           final childType = child['type'] as String? ?? '';
-          if (childType == 'part') {
+          final fstype = (child['fstype'] as String? ?? '').toLowerCase();
+
+          // Skip swap partitions
+          if (childType == 'part' && fstype != 'swap') {
             final partName = child['name'] as String? ?? '';
             final partSize = child['size'] as String? ?? '';
             final partMount = (child['mountpoint'] as String?) ?? '';
@@ -138,7 +141,7 @@ class DiskService {
 
   /// Scans every file under the disk's mountpoint, computing MD5 for each file.
   ///
-  /// Calls [onProgress] with (processed, total, currentPath, status). If the
+  /// Calls [onProgress] with (processed, total, currentPath, status, threats). If the
   /// disk is not mounted (empty `mountpoint`) this will throw.
   ///
   /// If [threatHashes] is provided, compares each file's hash against the set
@@ -150,6 +153,7 @@ class DiskService {
       int total,
       String currentPath,
       String status,
+      List<ThreatMatch> threats,
     )
     onProgress,
     Set<String>? threatHashes,
@@ -167,74 +171,117 @@ class DiskService {
 
     // First pass: count files to provide a total
     int total = 0;
+    final List<File> allFiles = [];
     try {
       await for (final file in _listFilesRecursively(root)) {
         if (shouldCancel?.call() ?? false) {
-          onProgress(total, total, '', 'Cancelled');
+          onProgress(total, total, '', 'Cancelled', []);
           return ScanResult(totalFiles: total, scannedFiles: 0, threats: []);
         }
+        allFiles.add(file);
         total++;
         // Report progress during counting phase every 100 files
         if (total % 100 == 0) {
-          onProgress(0, total, file.path, 'Counting files...');
+          onProgress(0, total, file.path, 'Counting files...', []);
         }
       }
     } catch (e) {
       // If counting fails, start with what we have and continue
-      onProgress(0, total, '', 'Counting interrupted, starting scan...');
+      onProgress(0, total, '', 'Counting interrupted, starting scan...', []);
     }
 
-    int processed = 0;
-    // Second pass: process files one by one, reporting progress
-    try {
-      await for (final file in _listFilesRecursively(root)) {
-        if (shouldCancel?.call() ?? false) {
-          onProgress(processed, total, '', 'Cancelled');
-          break;
-        }
-        final path = file.path;
-        onProgress(processed, total, path, 'Reading');
-        try {
-          // compute md5 digest via stream binding to avoid reading whole file into memory
-          final digest = await md5.bind(file.openRead()).first;
-          final md5Hex = digest.toString();
+    // Use a synchronized counter for thread-safe updates
+    var processed = 0;
 
-          // Check if this hash matches a threat
-          if (threatHashes != null &&
-              threatHashes.contains(md5Hex.toLowerCase())) {
-            threats.add(ThreatMatch(path: path, hash: md5Hex));
-            onProgress(
-              processed,
-              total,
-              path,
-              '⚠️ THREAT FOUND (${md5Hex.substring(0, 8)})',
-            );
-          } else {
-            // report digest in status (short form)
-            onProgress(
-              processed,
-              total,
-              path,
-              'Read (${md5Hex.substring(0, 8)})',
-            );
-          }
-        } catch (e) {
-          // ignore errors but report
+    // Process files with concurrency limit of 8
+    const concurrency = 8;
+    int activeWorkers = 0;
+    final completer = Completer<void>();
+    int fileIndex = 0;
+
+    Future<void> processFile(File file) async {
+      if (shouldCancel?.call() ?? false) {
+        return;
+      }
+
+      final path = file.path;
+
+      try {
+        // compute md5 digest via stream binding to avoid reading whole file into memory
+        final digest = await md5.bind(file.openRead()).first;
+        final md5Hex = digest.toString();
+
+        // Check if this hash matches a threat
+        if (threatHashes != null &&
+            threatHashes.contains(md5Hex.toLowerCase())) {
+          // Thread-safe add to threats list
+          threats.add(ThreatMatch(path: path, hash: md5Hex));
+
           onProgress(
             processed,
             total,
             path,
-            'Error reading: ${e.toString().split('\n').first}',
+            '⚠️ THREAT FOUND (${md5Hex.substring(0, 8)})',
+            List.from(threats),
+          );
+        } else {
+          // report digest in status (short form)
+          onProgress(
+            processed,
+            total,
+            path,
+            'Read (${md5Hex.substring(0, 8)})',
+            List.from(threats),
           );
         }
-
-        processed++;
-        onProgress(processed, total, path, 'Scanning');
+      } catch (e) {
+        // ignore errors but report
+        onProgress(
+          processed,
+          total,
+          path,
+          'Error reading: ${e.toString().split('\n').first}',
+          List.from(threats),
+        );
       }
-    } catch (e) {
-      // Scan was interrupted, return partial results
-      onProgress(processed, total, '', 'Scan interrupted');
+
+      // Increment counter
+      processed++;
+      onProgress(processed, total, path, 'Scanning', List.from(threats));
     }
+
+    void scheduleNext() {
+      while (activeWorkers < concurrency && fileIndex < allFiles.length) {
+        if (shouldCancel?.call() ?? false) {
+          if (activeWorkers == 0) {
+            completer.complete();
+          }
+          return;
+        }
+
+        final file = allFiles[fileIndex++];
+        activeWorkers++;
+
+        processFile(file).whenComplete(() {
+          activeWorkers--;
+          if (fileIndex < allFiles.length) {
+            scheduleNext();
+          } else if (activeWorkers == 0) {
+            completer.complete();
+          }
+        });
+      }
+
+      if (fileIndex >= allFiles.length && activeWorkers == 0) {
+        completer.complete();
+      }
+    }
+
+    // Start initial workers
+    scheduleNext();
+
+    // Wait for all files to be processed
+    await completer.future;
 
     return ScanResult(
       totalFiles: total,

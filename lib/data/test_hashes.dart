@@ -3,6 +3,7 @@
 /// the actual threat hashes from the remote source.
 ///
 /// Format: MD5 hashes (32 hex characters, lowercase)
+library;
 
 class TestHashes {
   /// Returns a set of test hashes to be loaded for testing purposes
